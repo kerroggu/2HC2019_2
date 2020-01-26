@@ -1,5 +1,5 @@
-# implemeneted cancel of orders
-
+# implemented cancel of orders
+# changed waiting cost from 1+P//4 >> 1+P//3
 
 import time
 st_time=time.time()
@@ -77,12 +77,13 @@ c=[]
 neighber=[set() for _ in range(V+1)]
 d_map=[{} for _ in range(V+1)]
 
+exp_wt=1+P//3
 for u,v,d,e1,e2 in roads:
-    g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
-    g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
+    g[0][u].append((v,d+(exp_wt if e1==5 else 0)))
+    g[0][v].append((u,d+(exp_wt if e2==5 else 0)))
     for dd in range(1,16):
-        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(1+P//4 if e1==5 else 0)))
-        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(1+P//4 if e2==5 else 0)))
+        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(exp_wt if e1==5 else 0)))
+        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(exp_wt if e2==5 else 0)))
     
     c.append((u,v,d,e1,e2))
     neighber[u].add(v)
@@ -391,8 +392,10 @@ def interactive(wait_num):
 
         show('items',item_at_car,order_detail[:10])
         ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
-
-        if car_status=='BROKEN':
+        if num_item_at_car<wait_num:
+            current_action=move(-1)
+            ship()
+        elif car_status=='BROKEN':
             current_action=move(-1)
             show('Stay due to broken at',cur)
         elif wait_status:
@@ -461,6 +464,7 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=10)
+    point=interactive(wait_num=0)
 
+    
     
