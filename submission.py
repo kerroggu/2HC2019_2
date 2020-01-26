@@ -4,6 +4,7 @@
 # error may be due to reference of g[] in rand_move??
 # introduced traffic light waiting calculation
 # introduced wait time if order<wait_num
+# added consideration whether return to the shop in warning
 
 import time
 st_time=time.time()
@@ -310,14 +311,16 @@ def root_generator(cur,deliver_point,jam_d=0):# generate root
         p=prev_p
     return jam_root_converter(cur,root)
 
-def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False,jam_d=0):
+def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False,jam_d=0,time_to_break=0):
     global order_at_shop
     global num_item_at_car
     if sim_mode:
         item_at_car=[[i for i in order] for orders in sim_item_at_car]
     
     min_update(now,cur,jam_d=jam_d)
-    
+    if time_to_break<mins[jam_d][cur][1]: # not able to return
+        time_to_break*=0
+        
     effc=0
     best_p,best_d=0,inf
     deliver_point=1
@@ -326,9 +329,9 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
         if dest==cur:continue
         d=mins[jam_d][cur][dest]
         rt=now+d
-        alt=0
+        alt=-time_to_break*(1<<40)
         for j in item_at_car[dest]:
-            alt+=T**2-(rt-j)**2
+            alt+=T**2-(rt-j)**2 -time_to_break*(1<<40)
         if alt/d>effc:
             effc,best_p,best_d=alt/d,alt,d
             deliver_point=dest
@@ -370,7 +373,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
 
     # generate root
     root=root_generator(cur,deliver_point,jam_d=jam_d)
- 
+
     return deliver_point,root,effc
 
 def rand_move(cur,now,jam_d=0):
@@ -396,6 +399,9 @@ def interactive(wait_num):
     current_action=-1
     root=[]
     dist=inf
+    warning=False
+    first_warning=True
+    time_to_break=0
     
     for t in range(T):
         car_status=input()
@@ -421,24 +427,41 @@ def interactive(wait_num):
 
         show('items',item_at_car,order_detail[:10])
         ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
+        
+        if car_status=='NOT BROKEN':
+            first_warning=True
+            time_to_break=0
 
         if car_status=='BROKEN':
             current_action=move(-1)
+            warning=False
+            time_to_break=0
             show('Stay due to broken at',cur)
         elif wait_status:
             current_action=move(-1)
             show('waiting at ',cur)
         else:
+        
             if state==0 and cur==1 and num_item_at_car<wait_num:
                 current_action=move(-1)
             elif state==0: # at vertex
+
+                if car_status[:7]=='WARNING' and first_warning==True:
+                    warning=True
+                    first_warning=False
+                    str_stat,time_to_break=car_status.split()
+                    time_to_break=int(time_to_break)
+                    show('Warning',time_to_break)
+
                 if cur==1:
                     ship()
                 else:
                     point+=deliver(cur,t)
                     
-                if final_dest==cur:
-                    deliver_point,root,effc=best_deliver(cur,t,item_at_car,optimize_mode=False,f_info=False,jam_d=cur_jam)
+                if final_dest==cur or warning:
+                    deliver_point,root,effc=best_deliver(cur,t,item_at_car,optimize_mode=False,f_info=False,jam_d=cur_jam,time_to_break=time_to_break)
+                    time_to_break=0
+                    warning=False
                     #deliver_point,root,effc=rand_move(cur,t,jam_d=cur_jam)
                     ##show('bd',root,item_at_car,order_at_shop)
                     if root:
