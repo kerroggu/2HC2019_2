@@ -241,7 +241,19 @@ def optimizer_drop(current,now,root,effc,best_p,best_d,f_info=True,jam_d=0):
     ##        show('!!optimization failed')
         rt=root
     
-    return rt
+    return jam_root_converter(cur,rt)
+
+def jam_root_converter(cur,root):
+    if root:
+        root.append((cur,0))
+        no_jam_root=[]
+        for i in range(len(root)-1):
+            p,x=root[i]
+            nx,x=root[i+1]
+            no_jam_root.append((p,d_map[p][nx]))
+    else:
+        no_jam_root=[]
+    return no_jam_root
 
 def root_generator(cur,deliver_point,jam_d=0):# generate root
     root=[]
@@ -251,13 +263,7 @@ def root_generator(cur,deliver_point,jam_d=0):# generate root
         root.append((p,mins[jam_d][p][prev_p]))
         p=prev_p
 
-    root.append((cur,0))
-    no_jam_root=[]
-    for i in range(len(root)-1):
-        p,x=root[i]
-        nx,x=root[i+1]
-        no_jam_root.append((p,d_map[p][nx]))
-    return no_jam_root
+    return jam_root_converter(cur,root)
 
 def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False,jam_d=0):
     global order_at_shop
