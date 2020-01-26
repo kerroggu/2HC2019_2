@@ -1,4 +1,5 @@
-# wait time 1
+# implemeneted cancel of orders
+
 
 import time
 st_time=time.time()
@@ -76,13 +77,12 @@ c=[]
 neighber=[set() for _ in range(V+1)]
 d_map=[{} for _ in range(V+1)]
 
-exp_wt=1+P//4
 for u,v,d,e1,e2 in roads:
-    g[0][u].append((v,d+(exp_wt if e1==5 else 0)))
-    g[0][v].append((u,d+(exp_wt if e2==5 else 0)))
+    g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
+    g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
     for dd in range(1,16):
-        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(exp_wt if e1==5 else 0)))
-        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(exp_wt if e2==5 else 0)))
+        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(1+P//4 if e1==5 else 0)))
+        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(1+P//4 if e2==5 else 0)))
     
     c.append((u,v,d,e1,e2))
     neighber[u].add(v)
@@ -391,7 +391,8 @@ def interactive(wait_num):
 
         show('items',item_at_car,order_detail[:10])
         ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
-        if num_item_at_car<wait_num and cur==1:
+
+        if cur==1 and num_item_at_car<wait_num:
             current_action=move(-1)
             ship()
         elif car_status=='BROKEN':
@@ -402,6 +403,7 @@ def interactive(wait_num):
             show('waiting at ',cur)
         else:
             if state==0: # at vertex
+                    
                 if final_dest==cur:
                     deliver_point,root,effc=best_deliver(cur,t,item_at_car,optimize_mode=False,f_info=False,jam_d=cur_jam)
                     #deliver_point,root,effc=rand_move(cur,t,jam_d=cur_jam)
@@ -449,7 +451,6 @@ def interactive(wait_num):
                     ship()
                 else:
                     point+=deliver(cur,t)
-                    
         
         Nachive = int(input())
         for j in range(Nachive):
