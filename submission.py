@@ -59,26 +59,9 @@ def dijkstra(edge,st):
     return dist,prev
 
 V,E=MI()
-g=[[] for _ in range(V+1)]
-c=[]
-neighber=[set() for _ in range(V+1)]
-d_map=[{} for _ in range(V+1)]
+roads=[]
 for i in range(E):
-    u,v,d,e1,e2=MI()
-    g[u].append((v,d))
-    g[v].append((u,d))
-    c.append((u,v,d))
-    neighber[u].add(v)
-    neighber[v].add(u)
-    d_map[u][v]=d
-    d_map[v][u]=d
-
-mins=[[] for _ in range(V+1)]
-prevs=[[] for _ in range(V+1)]
-for i in range(1,V+1):
-    min_dist,prev=dijkstra(g,i)
-    mins[i]=min_dist
-    prevs[i]=prev
+    roads.append(MI())
 
 f=LI()
 t=[LI() for i in range(4)]
@@ -88,6 +71,36 @@ T=I()
 order=[0]*T
 accor=[0]*T
 order_time=[]
+
+#g=[[] for _ in range(V+1)]
+g=[[[] for _ in range(V+1)] for d in range(5)]
+c=[]
+neighber=[set() for _ in range(V+1)]
+d_map=[{} for _ in range(V+1)]
+
+for u,v,d,e1,e2 in roads:
+    g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
+    g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
+    for dd in range(1,5):
+        g[dd][u].append((v,(10 if e1==dd else 1)*d+(1+P//4 if e1==5 else 0)))
+        g[dd][v].append((u,(10 if e2==dd else 1)*d+(1+P//4 if e2==5 else 0)))
+    
+    c.append((u,v,d,e1,e2))
+    neighber[u].add(v)
+    neighber[v].add(u)
+    d_map[u][v]=d
+    d_map[v][u]=d
+
+
+mins=[[[] for _ in range(V+1)] for d in range(5)]
+prevs=[[[] for _ in range(V+1)] for d in range(5)]
+
+for dd in range(5):
+    for i in range(1,V+1):
+        min_dist,prev=dijkstra(g[dd],i)
+        mins[dd][i]=min_dist
+        prevs[dd][i]=prev
+
 
 #show('order',order)
 order_at_shop=[] # stock (vertex, order_time)
@@ -144,21 +157,21 @@ def root_valuator(current,now,root,f_info=True):
         cur=next_dest
     return point,rt-now
 
-def neighber_search(cur,next_dest,effc,best_p,best_d,f_info=True):
+def neighber_search(cur,next_dest,effc,best_p,best_d,f_info=True,jam_d=0):
     global item_at_car
     drop=[]
     n_item=0
-    for nb,dist in g[cur]:
+    for nb,dist in g[jam_d][cur]:
         if nb==next_dest:continue
         if len(item_at_car[nb])>n_item:
             n_item=len(item_at_car[nb])
-            drop_effc=(best_p+n_item*(T**2))/(mins[cur][nb]*2+best_d)
+            drop_effc=(best_p+n_item*(T**2))/(mins[jam_d][cur][nb]*2+best_d)
             #if random.random()<drop_effc/effc:
             if drop_effc>=effc:
-                drop=[(cur,mins[nb][cur]),(nb,mins[cur][nb])]
+                drop=[(cur,mins[jam_d][nb][cur]),(nb,mins[jam_d][cur][nb])]
     return drop
 
-def optimizer_drop(current,now,root,effc,best_p,best_d,f_info=True):
+def optimizer_drop(current,now,root,effc,best_p,best_d,f_info=True,jam_d=0):
     ##    show('!Optimizing',root)
     global item_at_car
     opt_root=[]
@@ -172,30 +185,30 @@ def optimizer_drop(current,now,root,effc,best_p,best_d,f_info=True):
         drop=[]
         alt=0
         n_item=0
-        for nb,d_nb in g[cur]:
+        for nb,d_nb in g[jam_d][cur]:
             if nb==next_dest:continue
             if len(item_at_car[nb])>n_item:
                 #n_item=len(item_at_car[nb])
                 rt=now+d_nb
                 for j in item_at_car[nb]:
                     alt+=T**2-(rt-j)**2
-                if prevs[nb][next_dest]==nb: # nb connected to next_dest ( possible enhancement mins[prevs[nb][next_dest]][next_dest]==mins[nb][next_dest] )
-                    drop_time=mins[cur][nb]+mins[nb][next_dest]-dist
+                if prevs[0][nb][next_dest]==nb: # nb connected to next_dest ( possible enhancement mins[prevs[nb][next_dest]][next_dest]==mins[nb][next_dest] )
+                    drop_time=mins[jam_d][cur][nb]+mins[jam_d][nb][next_dest]-dist
                     drop_effc=(best_p+alt)/(drop_time+best_d)
                     if drop_effc>=effc:
                         effc=drop_effc
                         #effc=drop_effc
-                        drop.append((nb,mins[cur][nb]))
-                        drop.append((next_dest,mins[nb][next_dest]))
+                        drop.append((nb,mins[jam_d][cur][nb]))
+                        drop.append((next_dest,mins[jam_d][nb][next_dest]))
                 elif 0==1:
-                    drop_time=mins[cur][nb]*2
+                    drop_time=mins[jam_d][cur][nb]*2
                     drop_effc=(best_p+alt)/(drop_time+best_d)
                     if drop_effc>=effc:
                         effc=drop_effc
                         #effc=drop_effc
-                        drop.append((nb,mins[cur][nb]))
-                        drop.append((cur,mins[nb][cur]))
-                        drop.append((next_dest,mins[cur][next_dest]))
+                        drop.append((nb,mins[jam_d][cur][nb]))
+                        drop.append((cur,mins[jam_d][nb][cur]))
+                        drop.append((next_dest,mins[jam_d][cur][next_dest]))
         
         if drop:
             opt_root+=drop
@@ -233,16 +246,23 @@ def optimizer_drop(current,now,root,effc,best_p,best_d,f_info=True):
     
     return rt
 
-def root_generator(cur,deliver_point):# generate root
+def root_generator(cur,deliver_point,jam_d=0):# generate root
     root=[]
     p=deliver_point
     while p!=cur:
-        prev_p=prevs[cur][p]
-        root.append((p,mins[p][prev_p]))
+        prev_p=prevs[jam_d][cur][p]
+        root.append((p,mins[jam_d][p][prev_p]))
         p=prev_p
-    return root
 
-def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False):
+    root.append((cur,0))
+    no_jam_root=[]
+    for i in range(len(root)-1):
+        p,x=root[i]
+        nx,x=root[i+1]
+        no_jam_root.append((p,d_map[p][nx]))
+    return no_jam_root
+
+def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False,jam_d=0):
     global order_at_shop
     #global item_at_car
     global num_item_at_car
@@ -255,7 +275,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
     # direct go
     for dest in range(2,V+1):
         if dest==cur:continue
-        d=mins[cur][dest]
+        d=mins[jam_d][cur][dest]
         rt=now+d
         alt=0
         for j in item_at_car[dest]:
@@ -265,7 +285,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
             deliver_point=dest
     # turn to shop and go
     if cur!=1:
-        db=mins[cur][1]
+        db=mins[jam_d][cur][1]
         nx_item_at_car=[[] for i in range(1+V)]
         for order_v,t in order_at_shop:
             nx_item_at_car[order_v].append(t)
@@ -280,7 +300,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
         for dest in range(2,V+1):
             if cur==1:break
             if dest==cur:continue
-            dg=mins[1][dest]
+            dg=mins[jam_d][1][dest]
             rt=now+db+dg
             d=db+dg
             alt=0
@@ -291,22 +311,22 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
                 deliver_point=1
             
     # generate root
-    root=root_generator(cur,deliver_point)
+    root=root_generator(cur,deliver_point,jam_d=jam_d)
     
     # optimize
     if deliver_point==1:
         0
     else:
         if optimize_mode:
-            root=optimizer_drop(cur,now,root,effc,best_p,best_d,f_info=False)
+            root=optimizer_drop(cur,now,root,effc,best_p,best_d,f_info=False,jam_d=jam_d)
     # opt end
  
     return deliver_point,root,effc
 
-def rand_move(cur,now):
-    n=len(g[cur])
+def rand_move(cur,now,jam_d=0):
+    n=len(g[0][cur])
     x=random.randint(0,n-1)
-    dest,dist=g[cur][x]
+    dest,dist=g[0][cur][x]
     root=[(dest,dist)]
     return 0,root,0
 
@@ -321,6 +341,7 @@ def interactive(wait_num):
     cur=1
     point=0
     effc=0
+    cur_jam=0
     wait_status=False
     current_action=-1
     root=[]
@@ -328,7 +349,13 @@ def interactive(wait_num):
     
     for t in range(T):
         car_status=input()
-        j=LI()
+        jam_info=LI()
+        if sum(jam_info)==0:
+            cur_jam=0
+        else:
+            for i in range(4):
+                if jam_info[i]==1:
+                    cur_jam=i+1
         Ncan=I()
         for j in range(Ncan):
             can_id=I()
@@ -344,10 +371,8 @@ def interactive(wait_num):
 
         order[t]=v
         
-        show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
-        
-        #if stop_flag:car_status='BROKEN' # wait then stop forever
-            
+        ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
+
         if car_status=='BROKEN':
             current_action=move(-1)
             show('Stay due to broken at',cur)
@@ -362,15 +387,15 @@ def interactive(wait_num):
                     point+=deliver(cur,t)
                     
                 if final_dest==cur:
-                    deliver_point,root,effc=best_deliver(cur,t,item_at_car,f_info=False)
-                    #deliver_point,root,effc=rand_move(cur,t)
-                    show('bd',root,item_at_car,order_at_shop)
+                    deliver_point,root,effc=best_deliver(cur,t,item_at_car,optimize_mode=False,f_info=False,jam_d=cur_jam)
+                    #deliver_point,root,effc=rand_move(cur,t,jam_d=cur_jam)
+                    ##show('bd',root,item_at_car,order_at_shop)
                     if root:
                         final_dest=root[0][0]
                     else:
-                        deliver_point,root,effc=rand_move(cur,t)
+                        deliver_point,root,effc=rand_move(cur,t,jam_d=cur_jam)
                         final_dest=root[0][0]
-                        show('random',root)
+                        ##show('random',root)
 
                 dest,dist=root.pop() # not to do in waiting or jam
                 state=1
@@ -418,3 +443,5 @@ if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
     point=interactive(wait_num=0)
+
+    
