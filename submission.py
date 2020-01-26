@@ -1,4 +1,5 @@
-# jam judge by bit shit
+# implemeneted cancel of orders
+
 
 import time
 st_time=time.time()
@@ -65,8 +66,9 @@ t=[LI() for i in range(4)]
 P=I()
 tw=I()
 T=I()
-order=[0]*T
-accor=[0]*T
+order=[0]*(T+10)
+order_detail=[(0,0) for i in range(T+10)]
+accor=[0]*(T+10)
 order_time=[]
 
 #g=[[] for _ in range(V+1)]
@@ -119,7 +121,17 @@ def ship():
         v,t=order_at_shop.pop()
         item_at_car[v].append(t)
         num_item_at_car+=1
-##    show('item_at_car',item_at_car)
+    show('item_at_car',item_at_car)
+
+def cancel_order(v_can,t_can):
+    global num_item_at_car
+    if (v_can,t_can) in order_at_shop:
+        order_at_shop.remove((v_can,t_can))
+        show('canceled at shop',v_can,t_can)
+    if t_can in item_at_car[v_can]:
+        item_at_car[v_can].remove(t_can)
+        num_item_at_car-=1
+        show('canceled at car',v_can,t_can)
 
 def deliver(v,deliver_t):
     global num_item_at_car
@@ -296,7 +308,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
                 nx_item_at_car[i].append(t)
         if f_info:
             for t in range(min(now+1,T-1),min(now+db+1,T)):
-                v=order[t]
+                v=order[t][1]
                 if v!=0:
                     nx_item_at_car[v].append(t)
         for dest in range(2,V+1):
@@ -362,18 +374,22 @@ def interactive(wait_num):
         Ncan=I()
         for j in range(Ncan):
             can_id=I()
-        
+            v_can,t_can=order_detail[can_id]
+            cancel_order(v_can,t_can)
+            
         Nnew=I()
         v=0
         for j in range(Nnew):
             new_id,v=MI()
             order_at_shop.append((v,t))# stock (vertex, order_time)
+            order[t]=(new_id,v)
+            order_detail[new_id]=(v,t)
+
         Nput=I()
         for j in range(Nput):
             put_id=I()
 
-        order[t]=v
-        
+        show('items',item_at_car,order_detail[:10])
         ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
 
         if car_status=='BROKEN':
@@ -445,6 +461,6 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=1)
+    point=interactive(wait_num=10)
 
     
