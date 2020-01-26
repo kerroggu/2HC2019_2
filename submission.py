@@ -402,11 +402,6 @@ def interactive(wait_num):
             show('waiting at ',cur)
         else:
             if state==0: # at vertex
-                if cur==1:
-                    ship()
-                else:
-                    point+=deliver(cur,t)
-                    
                 if final_dest==cur:
                     deliver_point,root,effc=best_deliver(cur,t,item_at_car,optimize_mode=False,f_info=False,jam_d=cur_jam)
                     #deliver_point,root,effc=rand_move(cur,t,jam_d=cur_jam)
@@ -450,6 +445,11 @@ def interactive(wait_num):
             if dist==0:
                 cur=dest
                 state=0
+                if cur==1:
+                    ship()
+                else:
+                    point+=deliver(cur,t)
+                    
         
         Nachive = int(input())
         for j in range(Nachive):
@@ -463,6 +463,6 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=3)
+    point=interactive(wait_num=2)
 
     
