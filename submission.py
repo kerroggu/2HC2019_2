@@ -1,4 +1,5 @@
 # implemeneted cancel of orders
+# introduced wait time
 
 
 import time
@@ -447,10 +448,12 @@ def interactive(wait_num):
             if dist==0:
                 cur=dest
                 state=0
-                if cur==1:
-                    ship()
-                else:
-                    point+=deliver(cur,t)
+
+        if state==0:
+            if cur==1:
+                ship()
+            else:
+                point+=deliver(cur,t)
         
         Nachive = int(input())
         for j in range(Nachive):
