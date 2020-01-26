@@ -1,5 +1,9 @@
 # implemeneted cancel of orders
 # clean up
+# added edge info e1,e2 in dijkstra calc. no use of traffic light info
+# error may be due to reference of g[] in rand_move??
+# introduced traffic light waiting calculation
+# introduced wait time if order<wait_num
 
 import time
 st_time=time.time()
@@ -36,7 +40,7 @@ show_flg=False
 
 drop_probability=1
 
-def dijkstra(edge,st):
+def dijkstra(edge,st,start_time=0):
     # initialize: def: d=dist(st,i), prev=[previous vertex in minimum path], q[]
     n=len(edge)
     d=[(0 if st==i else inf,i) for i in range(n)]
@@ -47,7 +51,7 @@ def dijkstra(edge,st):
     # calc
     while q:
         dist,cur=heappop(q)
-        for dst,dist in edge[cur]:
+        for dst,dist,ei in edge[cur]:
             alt=d[cur][0]+dist
             if alt<d[dst][0]:
                 d[dst]=(alt,dst)
@@ -56,10 +60,10 @@ def dijkstra(edge,st):
     dist=[i for i,j in d]
     return dist,prev
 
-def dijkstra_w_light(edge,st,t):
+def dijkstra_w_light(edge,st,start_time=0):
     # initialize: def: d=dist(st,i), prev=[previous vertex in minimum path], q[]
     global P
-    show('dij called',st,t,P)
+    show('dij called',st,start_time,P)
     n=len(edge)
     d=[(0 if st==i else inf,i) for i in range(n)]
     prev=[0]*n
@@ -71,7 +75,7 @@ def dijkstra_w_light(edge,st,t):
         dist,cur=heappop(q)
         for dst,dist,ei in edge[cur]:
             if ei==5:
-                time_at_light=t+d[cur][0]+dist
+                time_at_light=start_time+d[cur][0]+dist
                 if time_at_light%(2*P)<P:
                     wt=0
                 else:
@@ -108,13 +112,14 @@ d_map=[{} for _ in range(V+1)]
 mins=[[[] for _ in range(V+1)] for d in range(16)]
 prevs=[[[] for _ in range(V+1)] for d in range(16)]
 exp_wt=1+P//4
+exp_wt=0
 
 for u,v,d,e1,e2 in roads:
-    g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
-    g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
+    g[0][u].append((v,d+(exp_wt if e1==5 else 0),e1))
+    g[0][v].append((u,d+(exp_wt if e2==5 else 0),e2))
     for dd in range(1,16):
-        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(1+P//4 if e1==5 else 0)))
-        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(1+P//4 if e2==5 else 0)))
+        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(exp_wt if e1==5 else 0),e1))
+        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(exp_wt if e2==5 else 0),e2))
     c.append((u,v,d,e1,e2))
     neighber[u].add(v)
     neighber[v].add(u)
@@ -123,7 +128,7 @@ for u,v,d,e1,e2 in roads:
 
 for dd in range(16):
     for i in range(1,V+1):
-        min_dist,prev=dijkstra(g[dd],i)
+        min_dist,prev=dijkstra_w_light(g[dd],i,start_time=0)
         mins[dd][i]=min_dist
         prevs[dd][i]=prev
 
@@ -133,11 +138,10 @@ item_at_car=[[] for _ in range(V+1)] # stock order time at each vertex
 num_item_at_car=0
 moves=[]
 
-def min_update(t,jam_d=0):
-    for i in range(1,V+1):
-        min_dist,prev=dijkstra_w_light(g[jam_d],i,t)
-        mins[jam_d][i]=min_dist
-        prevs[jam_d][i]=prev
+def min_update(t,st,jam_d=0):
+    min_dist,prev=dijkstra_w_light(g[jam_d],st,t)
+    mins[jam_d][st]=min_dist
+    prevs[jam_d][st]=prev
 
 def move(v):
     global moves
@@ -312,6 +316,8 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
     if sim_mode:
         item_at_car=[[i for i in order] for orders in sim_item_at_car]
     
+    min_update(now,cur,jam_d=jam_d)
+    
     effc=0
     best_p,best_d=0,inf
     deliver_point=1
@@ -329,6 +335,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
     # turn to shop and go
     if cur!=1:
         db=mins[jam_d][cur][1]
+        min_update(now+db,1,jam_d=jam_d)
         nx_item_at_car=[[] for i in range(1+V)]
         for order_v,t in order_at_shop:
             nx_item_at_car[order_v].append(t)
@@ -369,7 +376,7 @@ def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=Fal
 def rand_move(cur,now,jam_d=0):
     n=len(g[0][cur])
     x=random.randint(0,n-1)
-    dest,dist=g[0][cur][x]
+    dest,dist,ei=g[0][cur][x]
     root=[(dest,dist)]
     return 0,root,0
 
@@ -422,7 +429,9 @@ def interactive(wait_num):
             current_action=move(-1)
             show('waiting at ',cur)
         else:
-            if state==0: # at vertex
+            if state==0 and cur==1 and num_item_at_car<wait_num:
+                current_action=move(-1)
+            elif state==0: # at vertex
                 if cur==1:
                     ship()
                 else:
@@ -442,7 +451,6 @@ def interactive(wait_num):
                 dest,dist=root.pop() # not to do in waiting or jam
                 state=1
                 current_action=move(dest)
-
             else:
                 current_action=move(dest)
 
@@ -468,6 +476,12 @@ def interactive(wait_num):
             if dist==0:
                 cur=dest
                 state=0
+            
+        if state==0:
+            if cur==1:
+                ship()
+            else:
+                point+=deliver(cur,t)
         
         Nachive = int(input())
         for j in range(Nachive):
@@ -475,4 +489,4 @@ def interactive(wait_num):
 
     return point
 
-point=interactive(wait_num=0)
+point=interactive(wait_num=1)
