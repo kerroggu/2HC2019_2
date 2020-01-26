@@ -81,8 +81,8 @@ for u,v,d,e1,e2 in roads:
     g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
     g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
     for dd in range(1,16):
-        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd==1 else 1)*d+(1+P//4 if e1==5 else 0)))
-        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd==1 else 1)*d+(1+P//4 if e2==5 else 0)))
+        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd>0 else 1)*d+(1+P//4 if e1==5 else 0)))
+        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd>0 else 1)*d+(1+P//4 if e2==5 else 0)))
     
     c.append((u,v,d,e1,e2))
     neighber[u].add(v)
