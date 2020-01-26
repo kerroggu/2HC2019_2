@@ -1,8 +1,5 @@
-# changed as follows: line 380
-#移動判定
-#        #if current_action!=-1 and not wait_status:
-#        if current_action!=-1:
-        
+# jam judge by bit shit
+
 import time
 st_time=time.time()
 
@@ -73,7 +70,7 @@ accor=[0]*T
 order_time=[]
 
 #g=[[] for _ in range(V+1)]
-g=[[[] for _ in range(V+1)] for d in range(5)]
+g=[[[] for _ in range(V+1)] for d in range(16)]
 c=[]
 neighber=[set() for _ in range(V+1)]
 d_map=[{} for _ in range(V+1)]
@@ -81,9 +78,9 @@ d_map=[{} for _ in range(V+1)]
 for u,v,d,e1,e2 in roads:
     g[0][u].append((v,d+(1+P//4 if e1==5 else 0)))
     g[0][v].append((u,d+(1+P//4 if e2==5 else 0)))
-    for dd in range(1,5):
-        g[dd][u].append((v,(10 if e1==dd else 1)*d+(1+P//4 if e1==5 else 0)))
-        g[dd][v].append((u,(10 if e2==dd else 1)*d+(1+P//4 if e2==5 else 0)))
+    for dd in range(1,16):
+        g[dd][u].append((v,(10 if 1<=e1<=4 and (1<<(e1-1))&dd==1 else 1)*d+(1+P//4 if e1==5 else 0)))
+        g[dd][v].append((u,(10 if 1<=e2<=4 and (1<<(e2-1))&dd==1 else 1)*d+(1+P//4 if e2==5 else 0)))
     
     c.append((u,v,d,e1,e2))
     neighber[u].add(v)
@@ -92,10 +89,10 @@ for u,v,d,e1,e2 in roads:
     d_map[v][u]=d
 
 
-mins=[[[] for _ in range(V+1)] for d in range(5)]
-prevs=[[[] for _ in range(V+1)] for d in range(5)]
+mins=[[[] for _ in range(V+1)] for d in range(16)]
+prevs=[[[] for _ in range(V+1)] for d in range(16)]
 
-for dd in range(5):
+for dd in range(16):
     for i in range(1,V+1):
         min_dist,prev=dijkstra(g[dd],i)
         mins[dd][i]=min_dist
@@ -264,7 +261,6 @@ def root_generator(cur,deliver_point,jam_d=0):# generate root
 
 def best_deliver(cur,now,item_at_car,f_info=True,optimize_mode=True,sim_mode=False,jam_d=0):
     global order_at_shop
-    #global item_at_car
     global num_item_at_car
     if sim_mode:
         item_at_car=[[i for i in order] for orders in sim_item_at_car]
@@ -353,9 +349,10 @@ def interactive(wait_num):
         if sum(jam_info)==0:
             cur_jam=0
         else:
+            cur_jam=0
             for i in range(4):
                 if jam_info[i]==1:
-                    cur_jam=i+1
+                    cur_jam+=1<<i
         Ncan=I()
         for j in range(Ncan):
             can_id=I()
