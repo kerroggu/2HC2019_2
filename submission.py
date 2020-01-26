@@ -391,7 +391,7 @@ def interactive(wait_num):
 
         show('items',item_at_car,order_detail[:10])
         ##show('state',state,'cur',cur,'dest',dest,'dist',dist,'final_dest',final_dest,'root',root)
-        if num_item_at_car<wait_num:
+        if num_item_at_car<wait_num and cur==1:
             current_action=move(-1)
             ship()
         elif car_status=='BROKEN':
@@ -463,6 +463,6 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=1)
+    point=interactive(wait_num=3)
 
     
