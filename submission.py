@@ -439,6 +439,6 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=0)
+    point=interactive(wait_num=1)
 
     
