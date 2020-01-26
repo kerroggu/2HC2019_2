@@ -1,5 +1,4 @@
-# implemented cancel of orders
-# changed waiting cost from 1+P//4 >> 1+P//3
+# wait time 1
 
 import time
 st_time=time.time()
@@ -77,7 +76,7 @@ c=[]
 neighber=[set() for _ in range(V+1)]
 d_map=[{} for _ in range(V+1)]
 
-exp_wt=1+P//3
+exp_wt=1+P//4
 for u,v,d,e1,e2 in roads:
     g[0][u].append((v,d+(exp_wt if e1==5 else 0)))
     g[0][v].append((u,d+(exp_wt if e2==5 else 0)))
@@ -464,7 +463,6 @@ mode='greed'
 if mode=='rand':
     time_limit=29.5 # 1 = 1 sec
 elif mode=='greed':
-    point=interactive(wait_num=0)
+    point=interactive(wait_num=1)
 
-    
     
