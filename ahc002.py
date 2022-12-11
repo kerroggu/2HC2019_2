@@ -2,7 +2,7 @@
 first_time_limit = 0.16
 second_time_limit = 1.915
 min_break_length = 2
-max_break_length = 20
+max_break_length = 10
 path_search_limit_count = 2500
 initial_temp = 500
 final_temp = 10
@@ -149,7 +149,7 @@ while True:
     #print(path[br_st],cur_ans[br_st:br_ed],[(sc,ans,cur) for sc,ans,_,cur,_ in cand])
     temp = initial_temp + (final_temp - initial_temp) * (time.time() - start) / second_time_limit
     
-    if RI(0,1000)<1:
+    if RI(0,1000)<50:
         random.shuffle(cand)
     else:
         cand.sort(key =lambda x:-x[0])
@@ -194,7 +194,6 @@ while True:
             if max_score < cur_score:
                 final_ans = cur_ans
                 max_score = cur_score
-                #print(path[-1])
             break
 #print(max_score,aneal_cnt)
 print(final_ans)
