@@ -149,7 +149,7 @@ while True:
     #print(path[br_st],cur_ans[br_st:br_ed],[(sc,ans,cur) for sc,ans,_,cur,_ in cand])
     temp = initial_temp + (final_temp - initial_temp) * (time.time() - start) / second_time_limit
     
-    if RI(0,1000)<50:
+    if RI(0,1000)<1:
         random.shuffle(cand)
     else:
         cand.sort(key =lambda x:-x[0])
@@ -160,6 +160,8 @@ while True:
         prob = 0
         if delta_score >= 0:
             prob = 1
+        elif delta_score/temp <= -10:
+            prob = 0
         else:
             prob = trnsp
      
